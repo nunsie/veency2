@@ -662,6 +662,9 @@ static void VNCSetup() {
 }
 
 static void VNCEnabled() {
+    if (screen_ == NULL)
+        return;
+
     [lock_ lock];
 
     bool enabled(true);
