@@ -155,6 +155,8 @@ static rfbClientPtr client_;
 static void VNCSetup();
 static void VNCEnabled();
 
+float (*$GSMainScreenScaleFactor)();
+
 static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags flags) {
     [condition_ lock];
 
@@ -225,11 +227,10 @@ static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags
 + (void) registerClient {
     // XXX: this could find a better home
     if (ratio_ == 0) {
-        UIScreen *screen([UIScreen mainScreen]);
-        if ([screen respondsToSelector:@selector(scale)])
-            ratio_ = [screen scale];
+        if ($GSMainScreenScaleFactor == NULL)
+            ratio_ = 1.0f;
         else
-            ratio_ = 1;
+            ratio_ = $GSMainScreenScaleFactor();
     }
 
     ++clients_;
@@ -833,6 +834,7 @@ MSInitialize {
     sysctlbyname("hw.machine", machine, &size, NULL, 0);
     iPad1_ = strcmp(machine, "iPad1,1") == 0;
 
+    dlset($GSMainScreenScaleFactor, "GSMainScreenScaleFactor");
     dlset($GSEventCreateKeyEvent, "GSEventCreateKeyEvent");
     dlset($GSCreateSyntheticKeyEvent, "_GSCreateSyntheticKeyEvent");
     dlset($IOMobileFramebufferIsMainDisplay, "IOMobileFramebufferIsMainDisplay");
