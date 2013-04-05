@@ -51,6 +51,8 @@
 
 #include "SpringBoardAccess.h"
 
+MSClassHook(UIApplication)
+
 extern "C" void CoreSurfaceBufferFlushProcessorCaches(CoreSurfaceBufferRef buffer);
 
 static size_t width_;
@@ -216,7 +218,7 @@ static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags
         SBA_removeStatusBarImage(const_cast<char *>("Veency"));
     else if ($SBStatusBarController != nil)
         [[$SBStatusBarController sharedStatusBarController] removeStatusBarItem:@"Veency"];
-    else if (UIApplication *app = [UIApplication sharedApplication])
+    else if (UIApplication *app = [$UIApplication sharedApplication])
         [app removeStatusBarImageNamed:@"Veency"];
 }
 
@@ -237,7 +239,7 @@ static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags
         SBA_addStatusBarImage(const_cast<char *>("Veency"));
     else if ($SBStatusBarController != nil)
         [[$SBStatusBarController sharedStatusBarController] addStatusBarItem:@"Veency"];
-    else if (UIApplication *app = [UIApplication sharedApplication])
+    else if (UIApplication *app = [$UIApplication sharedApplication])
         [app addStatusBarImageNamed:@"Veency"];
 }
 
