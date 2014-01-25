@@ -590,6 +590,7 @@ extern "C" bool GSSystemHasCapability(NSString *);
 
 static CFTypeRef (*$GSSystemCopyCapability)(CFStringRef);
 static CFTypeRef (*$GSSystemGetCapability)(CFStringRef);
+static BOOL (*$MGGetBoolAnswer)(CFStringRef);
 
 static void VNCSetup() {
     rfbLogEnable(false);
@@ -616,6 +617,7 @@ static void VNCSetup() {
 
     $GSSystemCopyCapability = reinterpret_cast<CFTypeRef (*)(CFStringRef)>(dlsym(RTLD_DEFAULT, "GSSystemCopyCapability"));
     $GSSystemGetCapability = reinterpret_cast<CFTypeRef (*)(CFStringRef)>(dlsym(RTLD_DEFAULT, "GSSystemGetCapability"));
+    $MGGetBoolAnswer = reinterpret_cast<BOOL (*)(CFStringRef)>(dlsym(RTLD_DEFAULT, "MGGetBoolAnswer"));
 
     CFTypeRef opengles2;
 
@@ -625,6 +627,9 @@ static void VNCSetup() {
         opengles2 = (*$GSSystemGetCapability)(CFSTR("opengles-2"));
         if (opengles2 != NULL)
             CFRetain(opengles2);
+    } else if ($MGGetBoolAnswer != NULL) {
+        opengles2 = $MGGetBoolAnswer(CFSTR("opengles-2")) ? kCFBooleanTrue : kCFBooleanFalse;
+        CFRetain(opengles2);
     } else
         opengles2 = NULL;
 
