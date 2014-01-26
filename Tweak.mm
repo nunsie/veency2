@@ -26,34 +26,101 @@
 #define _unlikely(expr) \
     __builtin_expect(expr, 0)
 
-#include <CydiaSubstrate.h>
+#include <substrate.h>
 
 #include <rfb/rfb.h>
 #include <rfb/keysym.h>
 
-#include <mach/mach_port.h>
+#include <mach/mach.h>
 #include <sys/mman.h>
 #include <sys/sysctl.h>
 
-#import <QuartzCore/CAWindowServer.h>
-#import <QuartzCore/CAWindowServerDisplay.h>
+#undef assert
 
+#include <CoreFoundation/CFUserNotification.h>
 #import <CoreGraphics/CGGeometry.h>
 #import <GraphicsServices/GraphicsServices.h>
 #import <Foundation/Foundation.h>
-#import <IOMobileFramebuffer/IOMobileFramebuffer.h>
-#import <IOKit/IOKitLib.h>
 #import <UIKit/UIKit.h>
 
-#import <SpringBoard/SBAlertItemsController.h>
-#import <SpringBoard/SBDismissOnlyAlertItem.h>
-#import <SpringBoard/SBStatusBarController.h>
-
+extern "C" {
 #include "SpringBoardAccess.h"
+}
 
 MSClassHook(UIApplication)
 
+@interface UIApplication (Apple)
+- (void) addStatusBarImageNamed:(NSString *)name;
+- (void) removeStatusBarImageNamed:(NSString *)name;
+@end
+
+@interface CAWindowServerDisplay : NSObject
+- (mach_port_t) clientPortAtPosition:(CGPoint)position;
+@end
+
+@interface CAWindowServer : NSObject
++ (CAWindowServer *) serverIfRunning;
+- (NSArray *) displays;
+@end
+
+@interface UIModalView : UIView
+- (id) addButtonWithTitle:(NSString *)title;
+- (void) setBodyText:(NSString *)text;
+- (void) setDelegate:(id)delegate;
+- (void) setTitle:(NSString *)title;
+@end
+
+@interface SBAlertItem : NSObject
+- (void) dismiss;
+- (UIModalView *) alertSheet;
+@end
+
+@interface SBAlertItemsController : NSObject
++ (SBAlertItemsController *) sharedInstance;
+- (void) activateAlertItem:(SBAlertItem *)item;
+@end
+
+@interface SBStatusBarController : NSObject
++ (SBStatusBarController *) sharedStatusBarController;
+- (void) addStatusBarItem:(NSString *)item;
+- (void) removeStatusBarItem:(NSString *)item;
+@end
+
+typedef void *CoreSurfaceBufferRef;
+
+extern CFStringRef kCoreSurfaceBufferGlobal;
+extern CFStringRef kCoreSurfaceBufferMemoryRegion;
+extern CFStringRef kCoreSurfaceBufferPitch;
+extern CFStringRef kCoreSurfaceBufferWidth;
+extern CFStringRef kCoreSurfaceBufferHeight;
+extern CFStringRef kCoreSurfaceBufferPixelFormat;
+extern CFStringRef kCoreSurfaceBufferAllocSize;
+
+extern "C" CoreSurfaceBufferRef CoreSurfaceBufferCreate(CFDictionaryRef dict);
+extern "C" int CoreSurfaceBufferLock(CoreSurfaceBufferRef surface, unsigned int lockType);
+extern "C" int CoreSurfaceBufferUnlock(CoreSurfaceBufferRef surface);
+extern "C" void *CoreSurfaceBufferGetBaseAddress(CoreSurfaceBufferRef surface);
+
 extern "C" void CoreSurfaceBufferFlushProcessorCaches(CoreSurfaceBufferRef buffer);
+
+typedef void *CoreSurfaceAcceleratorRef;
+
+extern "C" int CoreSurfaceAcceleratorCreate(CFAllocatorRef allocator, int type, CoreSurfaceAcceleratorRef *accel);
+extern "C" unsigned int CoreSurfaceAcceleratorTransferSurface(CoreSurfaceAcceleratorRef accelerator, CoreSurfaceBufferRef dest, CoreSurfaceBufferRef src, CFDictionaryRef options/*, void *, void *, void **/);
+
+typedef void *IOMobileFramebufferRef;
+
+extern "C" kern_return_t IOMobileFramebufferSwapSetLayer(
+    IOMobileFramebufferRef fb,
+    int layer,
+    CoreSurfaceBufferRef buffer,
+    CGRect bounds,
+    CGRect frame,
+    int flags
+);
+
+extern "C" void IOMobileFramebufferGetDisplaySize(IOMobileFramebufferRef connect, CGSize *size);
+extern "C" void IOMobileFramebufferIsMainDisplay(IOMobileFramebufferRef connect, int *main);
 
 static size_t width_;
 static size_t height_;
@@ -138,7 +205,9 @@ MSClassHook(SBAlertItem)
 MSClassHook(SBAlertItemsController)
 MSClassHook(SBStatusBarController)
 
-@class VNCAlertItem;
+@interface VNCAlertItem : SBAlertItem
+@end
+
 static Class $VNCAlertItem;
 
 static NSString *DialogTitle(@"Remote Access Request");
