@@ -105,7 +105,7 @@ extern "C" void CoreSurfaceBufferFlushProcessorCaches(CoreSurfaceBufferRef buffe
 
 typedef void *CoreSurfaceAcceleratorRef;
 
-extern "C" int CoreSurfaceAcceleratorCreate(CFAllocatorRef allocator, int type, CoreSurfaceAcceleratorRef *accel);
+extern "C" int CoreSurfaceAcceleratorCreate(CFAllocatorRef allocator, void *type, CoreSurfaceAcceleratorRef *accel);
 extern "C" unsigned int CoreSurfaceAcceleratorTransferSurface(CoreSurfaceAcceleratorRef accelerator, CoreSurfaceBufferRef dest, CoreSurfaceBufferRef src, CFDictionaryRef options/*, void *, void *, void **/);
 
 typedef void *IOMobileFramebufferRef;

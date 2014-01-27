@@ -2,3 +2,4 @@ obj
 *.deb
 .theos
 _
+libvncserver.arm*
