@@ -43,4 +43,7 @@ ADDITIONAL_LDFLAGS += -lz
 ADDITIONAL_LDFLAGS += -F/System/Library/PrivateFrameworks
 ADDITIONAL_LDFLAGS += -weak_reference_mismatches weak
 
+ADDITIONAL_CFLAGS += -mllvm -arm-reserve-r9
+ADDITIONAL_LDFLAGS += -Xarch_armv6 -Wl,-lgcc_s.1
+
 include $(THEOS_MAKE_PATH)/tweak.mk
