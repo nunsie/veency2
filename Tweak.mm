@@ -617,6 +617,17 @@ static void VNCKeyboardNew(rfbBool down, rfbKeySym key, rfbClientPtr client) {
     uint16_t usage;
 
     switch (key) {
+        case XK_exclam: case XK_1: usage = kHIDUsage_Keyboard1; break;
+        case XK_at: case XK_2: usage = kHIDUsage_Keyboard2; break;
+        case XK_numbersign: case XK_3: usage = kHIDUsage_Keyboard3; break;
+        case XK_dollar: case XK_4: usage = kHIDUsage_Keyboard4; break;
+        case XK_percent: case XK_5: usage = kHIDUsage_Keyboard5; break;
+        case XK_asciicircum: case XK_6: usage = kHIDUsage_Keyboard6; break;
+        case XK_ampersand: case XK_7: usage = kHIDUsage_Keyboard7; break;
+        case XK_asterisk: case XK_8: usage = kHIDUsage_Keyboard8; break;
+        case XK_parenleft: case XK_9: usage = kHIDUsage_Keyboard9; break;
+        case XK_parenright: case XK_0: usage = kHIDUsage_Keyboard0; break;
+
         case XK_A: case XK_a: usage = kHIDUsage_KeyboardA; break;
         case XK_B: case XK_b: usage = kHIDUsage_KeyboardB; break;
         case XK_C: case XK_c: usage = kHIDUsage_KeyboardC; break;
