@@ -428,6 +428,9 @@ struct VeencyEvent {
     } data;
 };
 
+static void VNCPointerOld(int buttons, int x, int y, CGPoint location, int diff, bool twas, bool tis);
+static void VNCPointerNew(int buttons, int x, int y, CGPoint location, int diff, bool twas, bool tis);
+
 static void VNCPointer(int buttons, int x, int y, rfbClientPtr client) {
     if (ratio_ == 0)
         return;
@@ -461,6 +464,13 @@ static void VNCPointer(int buttons, int x, int y, rfbClientPtr client) {
         return;
     }
 
+    if (kCFCoreFoundationVersionNumber >= 800)
+        return VNCPointerNew(buttons, x, y, location, diff, twas, tis);
+    else
+        return VNCPointerOld(buttons, x, y, location, diff, twas, tis);
+}
+
+static void VNCPointerOld(int buttons, int x, int y, CGPoint location, int diff, bool twas, bool tis) {
     mach_port_t purple(0);
 
     if ((diff & 0x10) != 0) {
@@ -559,6 +569,9 @@ static void VNCPointer(int buttons, int x, int y, rfbClientPtr client) {
 
     if (purple != 0 && PurpleAllocated)
         mach_port_deallocate(mach_task_self(), purple);
+}
+
+static void VNCPointerNew(int buttons, int x, int y, CGPoint location, int diff, bool twas, bool tis) {
 }
 
 GSEventRef (*$GSEventCreateKeyEvent)(int, CGPoint, CFStringRef, CFStringRef, id, UniChar, short, short);
