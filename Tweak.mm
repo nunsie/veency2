@@ -52,6 +52,7 @@ extern "C" {
 #include "SpringBoardAccess.h"
 }
 
+MSClassHook(BKAccessibility)
 MSClassHook(UIApplication)
 
 @interface UIApplication (Apple)
@@ -61,6 +62,8 @@ MSClassHook(UIApplication)
 
 @interface CAWindowServerDisplay : NSObject
 - (mach_port_t) clientPortAtPosition:(CGPoint)position;
+- (unsigned) contextIdAtPosition:(CGPoint)position;
+- (mach_port_t) taskPortOfContextId:(unsigned)context;
 @end
 
 @interface CAWindowServer : NSObject
@@ -89,6 +92,14 @@ MSClassHook(UIApplication)
 + (SBStatusBarController *) sharedStatusBarController;
 - (void) addStatusBarItem:(NSString *)item;
 - (void) removeStatusBarItem:(NSString *)item;
+@end
+
+@interface BKHIDClientConnectionManager : NSObject
+- () clientForTaskPort:(mach_port_t)port;
+@end
+
+@interface BKAccessibility : NSObject
++ (BKHIDClientConnectionManager *) _eventRoutingClientConnectionManager;
 @end
 
 typedef void *CoreSurfaceBufferRef;
@@ -129,12 +140,22 @@ extern "C" void IOMobileFramebufferIsMainDisplay(IOMobileFramebufferRef connect,
 
 typedef CFTypeRef IOHIDEventRef;
 typedef CFTypeRef IOHIDEventSystemClientRef;
+typedef CFTypeRef IOHIDEventSystemConnectionRef;
 
 extern "C" {
     IOHIDEventRef IOHIDEventCreateKeyboardEvent(CFAllocatorRef allocator, uint64_t time, uint16_t page, uint16_t usage, Boolean down, IOHIDEventOptionBits flags);
+
+    IOHIDEventRef IOHIDEventCreateDigitizerEvent(CFAllocatorRef allocator, uint64_t timeStamp, IOHIDDigitizerTransducerType type, uint32_t index, uint32_t identity, uint32_t eventMask, uint32_t buttonMask, IOHIDFloat x, IOHIDFloat y, IOHIDFloat z, IOHIDFloat tipPressure, IOHIDFloat barrelPressure, Boolean range, Boolean touch, IOOptionBits options);
+    IOHIDEventRef IOHIDEventCreateDigitizerFingerEvent(CFAllocatorRef allocator, uint64_t timeStamp, uint32_t index, uint32_t identity, uint32_t eventMask, IOHIDFloat x, IOHIDFloat y, IOHIDFloat z, IOHIDFloat tipPressure, IOHIDFloat twist, Boolean range, Boolean touch, IOOptionBits options);
+
     IOHIDEventSystemClientRef IOHIDEventSystemClientCreate(CFAllocatorRef allocator);
+
+    void IOHIDEventAppendEvent(IOHIDEventRef parent, IOHIDEventRef child);
+    void IOHIDEventSetIntegerValue(IOHIDEventRef event, IOHIDEventField field, int value);
     void IOHIDEventSetSenderID(IOHIDEventRef event, uint64_t sender);
+
     void IOHIDEventSystemClientDispatchEvent(IOHIDEventSystemClientRef client, IOHIDEventRef event);
+    void IOHIDEventSystemConnectionDispatchEvent(IOHIDEventSystemConnectionRef connection, IOHIDEventRef event);
 }
 
 static size_t width_;
@@ -608,8 +629,52 @@ static void VNCPointerNew(int buttons, int x, int y, CGPoint location, int diff,
     if ((diff & 0x02) != 0)
         VNCSendHIDEvent(IOHIDEventCreateKeyboardEvent(kCFAllocatorDefault, mach_absolute_time(), kHIDPage_Consumer, kHIDUsage_Csmr_Power, (buttons & 0x02) != 0, 0));
 
-    if (twas != tis || tis) {
-    }
+    uint32_t handm;
+    uint32_t fingerm;
+
+    if (twas == 0 && tis == 1) {
+        handm = kIOHIDDigitizerEventRange | kIOHIDDigitizerEventTouch | kIOHIDDigitizerEventIdentity;
+        fingerm = kIOHIDDigitizerEventRange | kIOHIDDigitizerEventTouch;
+    } else if (twas == 1 && tis == 1) {
+        handm = kIOHIDDigitizerEventPosition;
+        fingerm = kIOHIDDigitizerEventPosition;
+    } else if (twas == 1 && tis == 0) {
+        handm = kIOHIDDigitizerEventRange | kIOHIDDigitizerEventTouch | kIOHIDDigitizerEventIdentity | kIOHIDDigitizerEventPosition;
+        fingerm = kIOHIDDigitizerEventRange | kIOHIDDigitizerEventTouch;
+    } else return;
+
+    CAWindowServer *server([CAWindowServer serverIfRunning]);
+    if (server == nil)
+        return;
+
+    CAWindowServerDisplay *display([[server displays] objectAtIndex:0]);
+    if (display == nil)
+        return;
+
+    unsigned context([display contextIdAtPosition:CGPointMake(x, y)]);
+    mach_port_t port([display taskPortOfContextId:context]);
+    if (port == MACH_PORT_NULL)
+        return;
+
+    IOHIDEventSystemConnectionRef connection([[$BKAccessibility _eventRoutingClientConnectionManager] clientForTaskPort:port]);
+    if (connection == NULL)
+        return;
+
+    // XXX: I guess this isn't ambiguous, and it works
+    IOHIDFloat xf(x);
+    IOHIDFloat yf(y);
+
+    IOHIDEventRef hand(IOHIDEventCreateDigitizerEvent(kCFAllocatorDefault, mach_absolute_time(), kIOHIDDigitizerTransducerTypeHand, 1<<22, 1, handm, 0, xf, yf, 0, 0, 0, 0, 0, 0));
+    IOHIDEventSetIntegerValue(hand, kIOHIDEventFieldIsBuiltIn, true);
+    IOHIDEventSetIntegerValue(hand, kIOHIDEventFieldDigitizerIsDisplayIntegrated, true);
+
+    IOHIDEventRef finger(IOHIDEventCreateDigitizerFingerEvent(kCFAllocatorDefault, mach_absolute_time(), 3, 2, fingerm, xf, yf, 0, 0, 0, tis, tis, 0));
+    IOHIDEventAppendEvent(hand, finger);
+    CFRelease(finger);
+
+    VNCSetSender(hand);
+    IOHIDEventSystemConnectionDispatchEvent(connection, hand);
+    CFRelease(hand);
 }
 
 GSEventRef (*$GSEventCreateKeyEvent)(int, CGPoint, CFStringRef, CFStringRef, id, UniChar, short, short);
