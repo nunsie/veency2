@@ -7,7 +7,7 @@
 	<key>cell</key>
 	<string>PSLinkCell</string>
 	<key>icon</key>
-	<string>VeencyIcon.png</string>
+	<string>Veency.png</string>
 	<key>label</key>
 	<string>Veency</string>
     </dict>
