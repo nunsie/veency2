@@ -8,6 +8,7 @@ Architecture: iphoneos-arm
 Description: a VNC /server/ for the iPhone
 Name: Veency
 Depends: mobilesubstrate (>= 0.9.2966), firmware (<< 7.0) | mobilesubstrate (>= 0.9.5001), firmware (>= 7.0) | com.saurik.iphone.ske, preferenceloader (>= 2.1.0), firmware (<< 7.0) | preferenceloader (>= 2.2.2), jp.ashikase.mousesupport | firmware (<< 3.0), libstatusbar | firmware (<< 4.0), firmware (<< 6.0) | ch.ringwald.springboardaccess
+Pre-Depends: dpkg (>= 1.14.25-8)
 Author: Jay Freeman (saurik) <saurik@saurik.com>
 Depiction: http://cydia.saurik.com/info/veency/
 Tag: purpose::daemon, role::enduser
