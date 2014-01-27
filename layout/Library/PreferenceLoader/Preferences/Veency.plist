@@ -17,6 +17,28 @@
 	<dict>
 	    <key>cell</key>
 	    <string>PSGroupCell</string>
+            <key>pl_filter</key>
+            <dict>
+                <key>CoreFoundationVersion</key>
+                <array>
+                    <real>0.0</real>
+                    <real>800</real>
+                </array>
+            </dict>
+	</dict>
+
+	<dict>
+	    <key>cell</key>
+	    <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Cursors are not yet possible on iOS 7. This will require Mouse Support to be updated.</string>
+            <key>pl_filter</key>
+            <dict>
+                <key>CoreFoundationVersion</key>
+                <array>
+                    <real>800</real>
+                </array>
+            </dict>
 	</dict>
 
         <dict>
@@ -47,6 +69,38 @@
             <string>Show Cursor</string>
             <key>PostNotification</key>
             <string>com.saurik.Veency-Settings</string>
+            <key>pl_filter</key>
+            <dict>
+                <key>CoreFoundationVersion</key>
+                <array>
+                    <real>0.0</real>
+                    <real>800</real>
+                </array>
+            </dict>
+        </dict>
+
+        <dict>
+	    <key>cell</key>
+	    <string>PSSwitchCell</string>
+	    <key>default</key>
+	    <false/>
+            <key>enabled</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.saurik.Veency</string>
+            <key>key</key>
+            <string>ShowCursor</string>
+            <key>label</key>
+            <string>Show Cursor</string>
+            <key>PostNotification</key>
+            <string>com.saurik.Veency-Settings</string>
+            <key>pl_filter</key>
+            <dict>
+                <key>CoreFoundationVersion</key>
+                <array>
+                    <real>800</real>
+                </array>
+            </dict>
         </dict>
 
 	<dict>
