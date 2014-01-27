@@ -29,11 +29,14 @@ function arch() {
     local min=$5
     shift 5
 
+    rm -rf "libjpeg.${arch}"
     rm -rf "libvncserver.${arch}"
+
     if ! isysroot=$(xcodebuild -sdk "${sdk}" -version Path); then
         return
     fi
 
+    mkdir "libjpeg.${arch}"
     mkdir "libvncserver.${arch}"
 
     flags=()
@@ -46,8 +49,26 @@ function arch() {
         flags+=(-mthumb)
     fi
 
+    cpp="$*"
+
+    function configure() {
+        code=$1
+        shift
+        CC="clang -arch ${arch}" CXX="clang++ -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} ${cpp}" ../"${code}"/configure --host="${host}" --disable-shared "$@"
+    }
+
+    cd "libjpeg.${arch}"
+    configure jpeg-9a
+    make
+    cd ..
+
+    flags+=(-I"${PWD}/jpeg-9a")
+
+    jpeg=${PWD}/libjpeg.${arch}
+    flags+=(-I"${jpeg}")
+
     cd "libvncserver.${arch}"
-    CC="clang -arch ${arch}" CXX="clang++ -arch ${arch}" CFLAGS="${flags[*]}" CPPFLAGS="${flags[*]} $*" ../libvncserver/configure --host="${host}" --disable-shared
+    configure libvncserver JPEG_LDFLAGS="-L${jpeg}/.libs -ljpeg"
     make
     cd ..
 }

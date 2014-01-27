@@ -27,7 +27,13 @@ ADDITIONAL_CFLAGS += -fvisibility=hidden
 
 ADDITIONAL_LDFLAGS += -Xarch_armv6 -Llibvncserver.armv6/libvncserver/.libs
 ADDITIONAL_LDFLAGS += -Xarch_arm64 -Llibvncserver.arm64/libvncserver/.libs
-ADDITIONAL_LDFLAGS += -lvncserver -lz
+ADDITIONAL_LDFLAGS += -lvncserver
+
+ADDITIONAL_LDFLAGS += -Xarch_armv6 -Llibjpeg.armv6/.libs
+ADDITIONAL_LDFLAGS += -Xarch_arm64 -Llibjpeg.arm64/.libs
+ADDITIONAL_LDFLAGS += -ljpeg
+
+ADDITIONAL_LDFLAGS += -lz
 
 ADDITIONAL_LDFLAGS += -F/System/Library/PrivateFrameworks
 ADDITIONAL_LDFLAGS += -weak_reference_mismatches weak
