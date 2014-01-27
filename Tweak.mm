@@ -52,6 +52,10 @@ extern "C" {
 #include "SpringBoardAccess.h"
 }
 
+typedef CFTypeRef IOHIDEventRef;
+typedef CFTypeRef IOHIDEventSystemClientRef;
+typedef CFTypeRef IOHIDEventSystemConnectionRef;
+
 MSClassHook(BKAccessibility)
 MSClassHook(UIApplication)
 
@@ -95,7 +99,7 @@ MSClassHook(UIApplication)
 @end
 
 @interface BKHIDClientConnectionManager : NSObject
-- () clientForTaskPort:(mach_port_t)port;
+- (IOHIDEventSystemConnectionRef) clientForTaskPort:(mach_port_t)port;
 @end
 
 @interface BKAccessibility : NSObject
@@ -137,10 +141,6 @@ extern "C" kern_return_t IOMobileFramebufferSwapSetLayer(
 
 extern "C" void IOMobileFramebufferGetDisplaySize(IOMobileFramebufferRef connect, CGSize *size);
 extern "C" void IOMobileFramebufferIsMainDisplay(IOMobileFramebufferRef connect, int *main);
-
-typedef CFTypeRef IOHIDEventRef;
-typedef CFTypeRef IOHIDEventSystemClientRef;
-typedef CFTypeRef IOHIDEventSystemConnectionRef;
 
 extern "C" {
     IOHIDEventRef IOHIDEventCreateKeyboardEvent(CFAllocatorRef allocator, uint64_t time, uint16_t page, uint16_t usage, Boolean down, IOHIDEventOptionBits flags);
