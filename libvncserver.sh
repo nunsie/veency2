@@ -21,7 +21,6 @@
 
 set -e
 
-archs=()
 function arch() {
     local arch=$1
     local host=$2
@@ -35,7 +34,6 @@ function arch() {
         return
     fi
 
-    archs+=("${arch}")
     mkdir "libvncserver.${arch}"
 
     flags=()
@@ -56,10 +54,3 @@ function arch() {
 
 arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 -mllvm -arm-reserve-r9
 arch arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0
-
-libvncserver=()
-for arch in "${archs[@]}"; do
-    libvncserver+=(libvncserver."${arch}"/.libs/libvncserver.a)
-done
-
-lipo -create -output libvncserver.a "${libvncserver[@]}"
