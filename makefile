@@ -14,10 +14,15 @@ Veency_FRAMEWORKS += IOMobileFramebuffer
 Veency_FRAMEWORKS += QuartzCore
 Veency_FRAMEWORKS += UIKit
 
+ADDITIONAL_LDFLAGS += -weak_framework IOKit
+
 ADDITIONAL_OBJCFLAGS += -Wno-gnu
 ADDITIONAL_OBJCFLAGS += -Wno-dangling-else
 
-ADDITIONAL_OBJCFLAGS += -idirafter .
+ADDITIONAL_OBJCFLAGS += -idirafter xnu-2422.1.72/iokit
+ADDITIONAL_OBJCFLAGS += -idirafter xnu-2422.1.72/libkern
+ADDITIONAL_OBJCFLAGS += -idirafter xnu-2422.1.72/osfmk
+ADDITIONAL_OBJCFLAGS += -idirafter include
 
 ADDITIONAL_OBJCFLAGS += -Ilibvncserver
 ADDITIONAL_OBJCFLAGS += -Xarch_armv6 -Ilibvncserver.armv6

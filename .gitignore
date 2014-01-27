@@ -5,3 +5,5 @@ _
 jpeg-9a
 libjpeg.arm*
 libvncserver.arm*
+IOHIDFamily-503.1.13
+xnu-2422.1.72
