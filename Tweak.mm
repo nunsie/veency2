@@ -189,6 +189,9 @@ static void VNCBlack() {
 }
 
 static bool Ashikase(bool always) {
+    if (kCFCoreFoundationVersionNumber >= 800)
+        return false;
+
     if (!always && !cursor_)
         return false;
 
