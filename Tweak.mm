@@ -66,8 +66,6 @@ MSClassHook(UIApplication)
 
 @interface CAWindowServerDisplay : NSObject
 - (mach_port_t) clientPortAtPosition:(CGPoint)position;
-- (unsigned) contextIdAtPosition:(CGPoint)position;
-- (mach_port_t) taskPortOfContextId:(unsigned)context;
 @end
 
 @interface CAWindowServer : NSObject
@@ -96,14 +94,6 @@ MSClassHook(UIApplication)
 + (SBStatusBarController *) sharedStatusBarController;
 - (void) addStatusBarItem:(NSString *)item;
 - (void) removeStatusBarItem:(NSString *)item;
-@end
-
-@interface BKHIDClientConnectionManager : NSObject
-- (IOHIDEventSystemConnectionRef) clientForTaskPort:(mach_port_t)port;
-@end
-
-@interface BKAccessibility : NSObject
-+ (BKHIDClientConnectionManager *) _eventRoutingClientConnectionManager;
 @end
 
 typedef void *CoreSurfaceBufferRef;
@@ -643,26 +633,15 @@ static void VNCPointerNew(int buttons, int x, int y, CGPoint location, int diff,
         fingerm = kIOHIDDigitizerEventRange | kIOHIDDigitizerEventTouch;
     } else return;
 
-    CAWindowServer *server([CAWindowServer serverIfRunning]);
-    if (server == nil)
-        return;
+    // XXX: avoid division in VNCPointer()
+    x *= ratio_;
+    y *= ratio_;
 
-    CAWindowServerDisplay *display([[server displays] objectAtIndex:0]);
-    if (display == nil)
-        return;
-
-    unsigned context([display contextIdAtPosition:CGPointMake(x, y)]);
-    mach_port_t port([display taskPortOfContextId:context]);
-    if (port == MACH_PORT_NULL)
-        return;
-
-    IOHIDEventSystemConnectionRef connection([[$BKAccessibility _eventRoutingClientConnectionManager] clientForTaskPort:port]);
-    if (connection == NULL)
-        return;
-
-    // XXX: I guess this isn't ambiguous, and it works
     IOHIDFloat xf(x);
     IOHIDFloat yf(y);
+
+    xf /= width_;
+    yf /= height_;
 
     IOHIDEventRef hand(IOHIDEventCreateDigitizerEvent(kCFAllocatorDefault, mach_absolute_time(), kIOHIDDigitizerTransducerTypeHand, 1<<22, 1, handm, 0, xf, yf, 0, 0, 0, 0, 0, 0));
     IOHIDEventSetIntegerValue(hand, kIOHIDEventFieldIsBuiltIn, true);
@@ -672,9 +651,7 @@ static void VNCPointerNew(int buttons, int x, int y, CGPoint location, int diff,
     IOHIDEventAppendEvent(hand, finger);
     CFRelease(finger);
 
-    VNCSetSender(hand);
-    IOHIDEventSystemConnectionDispatchEvent(connection, hand);
-    CFRelease(hand);
+    VNCSendHIDEvent(hand);
 }
 
 GSEventRef (*$GSEventCreateKeyEvent)(int, CGPoint, CFStringRef, CFStringRef, id, UniChar, short, short);
