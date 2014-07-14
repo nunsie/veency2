@@ -597,16 +597,12 @@ static void VNCPointerOld(int buttons, int x, int y, CGPoint location, int diff,
         mach_port_deallocate(mach_task_self(), purple);
 }
 
-static void VNCSetSender(IOHIDEventRef event) {
-    IOHIDEventSetSenderID(event, 0xDEFACEDBEEFFECE5);
-}
-
 static void VNCSendHIDEvent(IOHIDEventRef event) {
     static IOHIDEventSystemClientRef client_(NULL);
     if (client_ == NULL)
         client_ = IOHIDEventSystemClientCreate(kCFAllocatorDefault);
 
-    VNCSetSender(event);
+    IOHIDEventSetSenderID(event, 0xDEFACEDBEEFFECE5);
     IOHIDEventSystemClientDispatchEvent(client_, event);
     CFRelease(event);
 }
