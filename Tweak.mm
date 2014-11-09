@@ -394,8 +394,6 @@ static void FixRecord(GSEventRecord *record) {
 }
 
 static void VNCSettings() {
-    NSDictionary *settings([NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/Library/Preferences/com.saurik.Veency.plist", NSHomeDirectory()]]);
-
     @synchronized (lock_) {
         for (NSValue *handler in handlers_)
             rfbUnregisterSecurityHandler(reinterpret_cast<rfbSecurityHandler *>([handler pointerValue]));
@@ -406,16 +404,19 @@ static void VNCSettings() {
         if (screen_ == NULL)
             return;
 
-        [reinterpret_cast<NSString *>(screen_->authPasswdData) release];
+        [(NSString *) screen_->authPasswdData release];
         screen_->authPasswdData = NULL;
 
-        if (settings != nil)
-            if (NSString *password = [settings objectForKey:@"Password"])
-                if ([password length] != 0)
-                    screen_->authPasswdData = [password retain];
+        if (CFStringRef password = (CFStringRef) CFPreferencesCopyAppValue(CFSTR("Password"), CFSTR("com.saurik.Veency")))
+            if (CFStringGetLength(password) == 0)
+                CFRelease(password);
+            else
+                screen_->authPasswdData = (void *) password;
 
-        NSNumber *cursor = [settings objectForKey:@"ShowCursor"];
-        cursor_ = cursor == nil ? true : [cursor boolValue];
+        Boolean valid;
+        cursor_ = CFPreferencesGetAppBooleanValue(CFSTR("ShowCursor"), CFSTR("com.saurik.Veency"), &valid);
+        if (!valid)
+            cursor_ = true;
 
         if (clients_ != 0)
             AshikaseSetEnabled(cursor_, true);
@@ -922,10 +923,10 @@ static void VNCEnabled() {
 
     [lock_ lock];
 
-    bool enabled(true);
-    if (NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:[NSString stringWithFormat:@"%@/Library/Preferences/com.saurik.Veency.plist", NSHomeDirectory()]])
-        if (NSNumber *number = [settings objectForKey:@"Enabled"])
-            enabled = [number boolValue];
+    Boolean valid;
+    bool enabled(CFPreferencesGetAppBooleanValue(CFSTR("Enabled"), CFSTR("com.saurik.Veency"), &valid));
+    if (!valid)
+        enabled = true;
 
     if (enabled != running_)
         if (enabled) {
