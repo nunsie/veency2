@@ -71,7 +71,7 @@ function arch() {
 
     cd "libvncserver.${arch}"
     configure libvncserver JPEG_LDFLAGS="-L${jpeg}/.libs -ljpeg"
-    make
+    make -C libvncserver
     cd ..
 
     archs+=("${arch}")
