@@ -1,5 +1,5 @@
-TARGET := iphone:7.0:2.0
-ARCHS := armv6 arm64
+TARGET := iphone:7.1:2.0
+ARCHS := armv6 armv7 arm64
 PACKAGE_VERSION := $(shell ./version.sh)
 
 include theos/makefiles/common.mk
@@ -8,7 +8,6 @@ TWEAK_NAME := Veency
 Veency_FILES := Tweak.mm SpringBoardAccess.c
 
 Veency_FRAMEWORKS := 
-Veency_FRAMEWORKS += CoreSurface
 Veency_FRAMEWORKS += GraphicsServices
 Veency_FRAMEWORKS += IOMobileFramebuffer
 Veency_FRAMEWORKS += QuartzCore
@@ -25,17 +24,16 @@ ADDITIONAL_OBJCFLAGS += -idirafter xnu-2422.1.72/osfmk
 ADDITIONAL_OBJCFLAGS += -idirafter include
 
 ADDITIONAL_OBJCFLAGS += -Ilibvncserver
+# XXX: -Xarch_armv[67] doesn't even work... *sigh*
 ADDITIONAL_OBJCFLAGS += -Xarch_armv6 -Ilibvncserver.armv6
+ADDITIONAL_OBJCFLAGS += -Xarch_armv7 -Ilibvncserver.armv7
 ADDITIONAL_OBJCFLAGS += -Xarch_arm64 -Ilibvncserver.arm64
 
 ADDITIONAL_CFLAGS += -fvisibility=hidden
 
-ADDITIONAL_LDFLAGS += -Xarch_armv6 -Llibvncserver.armv6/libvncserver/.libs
-ADDITIONAL_LDFLAGS += -Xarch_arm64 -Llibvncserver.arm64/libvncserver/.libs
+ADDITIONAL_LDFLAGS += -Llibrary
+ADDITIONAL_LDFLAGS += -lsurface
 ADDITIONAL_LDFLAGS += -lvncserver
-
-ADDITIONAL_LDFLAGS += -Xarch_armv6 -Llibjpeg.armv6/.libs
-ADDITIONAL_LDFLAGS += -Xarch_arm64 -Llibjpeg.arm64/.libs
 ADDITIONAL_LDFLAGS += -ljpeg
 
 ADDITIONAL_LDFLAGS += -lz

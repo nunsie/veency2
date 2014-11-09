@@ -96,34 +96,58 @@ MSClassHook(UIApplication)
 - (void) removeStatusBarItem:(NSString *)item;
 @end
 
-typedef void *CoreSurfaceBufferRef;
+#if defined(_ARM_ARCH_6) && !defined(_ARM_ARCH_7)
 
-extern CFStringRef kCoreSurfaceBufferGlobal;
-extern CFStringRef kCoreSurfaceBufferMemoryRegion;
-extern CFStringRef kCoreSurfaceBufferPitch;
-extern CFStringRef kCoreSurfaceBufferWidth;
-extern CFStringRef kCoreSurfaceBufferHeight;
-extern CFStringRef kCoreSurfaceBufferPixelFormat;
-extern CFStringRef kCoreSurfaceBufferAllocSize;
+#define kIOSurfaceAllocSize kCoreSurfaceBufferAllocSize
+#define kIOSurfaceBytesPerRow kCoreSurfaceBufferPitch
+#define kIOSurfaceHeight kCoreSurfaceBufferHeight
+#define kIOSurfaceIsGlobal kCoreSurfaceBufferGlobal
+#define kIOSurfaceMemoryRegion kCoreSurfaceBufferMemoryRegion
+#define kIOSurfacePixelFormat kCoreSurfaceBufferPixelFormat
+#define kIOSurfaceWidth kCoreSurfaceBufferWidth
 
-extern "C" CoreSurfaceBufferRef CoreSurfaceBufferCreate(CFDictionaryRef dict);
-extern "C" int CoreSurfaceBufferLock(CoreSurfaceBufferRef surface, unsigned int lockType);
-extern "C" int CoreSurfaceBufferUnlock(CoreSurfaceBufferRef surface);
-extern "C" void *CoreSurfaceBufferGetBaseAddress(CoreSurfaceBufferRef surface);
+#define IOSurfaceRef CoreSurfaceBufferRef
+#define IOSurfaceAcceleratorRef CoreSurfaceAcceleratorRef
 
-extern "C" void CoreSurfaceBufferFlushProcessorCaches(CoreSurfaceBufferRef buffer);
+#define IOSurfaceCreate CoreSurfaceBufferCreate
+#define IOSurfaceFlushProcessorCaches CoreSurfaceBufferFlushProcessorCaches
+#define IOSurfaceGetBaseAddress CoreSurfaceBufferGetBaseAddress
+#define IOSurfaceLock CoreSurfaceBufferLock
+#define IOSurfaceUnlock CoreSurfaceBufferUnlock
 
-typedef void *CoreSurfaceAcceleratorRef;
+#define IOSurfaceAcceleratorCreate CoreSurfaceAcceleratorCreate
+#define IOSurfaceAcceleratorTransferSurface CoreSurfaceAcceleratorTransferSurface
 
-extern "C" int CoreSurfaceAcceleratorCreate(CFAllocatorRef allocator, void *type, CoreSurfaceAcceleratorRef *accel);
-extern "C" unsigned int CoreSurfaceAcceleratorTransferSurface(CoreSurfaceAcceleratorRef accelerator, CoreSurfaceBufferRef dest, CoreSurfaceBufferRef src, CFDictionaryRef options/*, void *, void *, void **/);
+#endif
+
+typedef void *IOSurfaceRef;
+
+extern CFStringRef kIOSurfaceIsGlobal;
+extern CFStringRef kIOSurfaceMemoryRegion;
+extern CFStringRef kIOSurfaceBytesPerRow;
+extern CFStringRef kIOSurfaceWidth;
+extern CFStringRef kIOSurfaceHeight;
+extern CFStringRef kIOSurfacePixelFormat;
+extern CFStringRef kIOSurfaceAllocSize;
+
+extern "C" IOSurfaceRef IOSurfaceCreate(CFDictionaryRef dict);
+extern "C" int IOSurfaceLock(IOSurfaceRef surface, unsigned int lockType);
+extern "C" int IOSurfaceUnlock(IOSurfaceRef surface);
+extern "C" void *IOSurfaceGetBaseAddress(IOSurfaceRef surface);
+
+extern "C" void IOSurfaceFlushProcessorCaches(IOSurfaceRef buffer);
+
+typedef void *IOSurfaceAcceleratorRef;
+
+extern "C" int IOSurfaceAcceleratorCreate(CFAllocatorRef allocator, void *type, IOSurfaceAcceleratorRef *accel);
+extern "C" unsigned int IOSurfaceAcceleratorTransferSurface(IOSurfaceAcceleratorRef accelerator, IOSurfaceRef dest, IOSurfaceRef src, CFDictionaryRef options/*, void *, void *, void **/);
 
 typedef void *IOMobileFramebufferRef;
 
 extern "C" kern_return_t IOMobileFramebufferSwapSetLayer(
     IOMobileFramebufferRef fb,
     int layer,
-    CoreSurfaceBufferRef buffer,
+    IOSurfaceRef buffer,
     CGRect bounds,
     CGRect frame,
     int flags
@@ -155,8 +179,8 @@ static NSUInteger ratio_ = 0;
 static const size_t BytesPerPixel = 4;
 static const size_t BitsPerSample = 8;
 
-static CoreSurfaceAcceleratorRef accelerator_;
-static CoreSurfaceBufferRef buffer_;
+static IOSurfaceAcceleratorRef accelerator_;
+static IOSurfaceRef buffer_;
 static CFDictionaryRef options_;
 
 static NSMutableSet *handlers_;
@@ -884,29 +908,29 @@ static void VNCSetup() {
     bool accelerated(opengles2 != NULL && [(NSNumber *)opengles2 boolValue]);
 
     if (accelerated)
-        CoreSurfaceAcceleratorCreate(NULL, NULL, &accelerator_);
+        IOSurfaceAcceleratorCreate(NULL, NULL, &accelerator_);
 
     if (opengles2 != NULL)
         CFRelease(opengles2);
 
     if (accelerator_ != NULL)
-        buffer_ = CoreSurfaceBufferCreate((CFDictionaryRef) [NSDictionary dictionaryWithObjectsAndKeys:
-            @"PurpleEDRAM", kCoreSurfaceBufferMemoryRegion,
-            [NSNumber numberWithBool:YES], kCoreSurfaceBufferGlobal,
-            [NSNumber numberWithInt:(width_ * BytesPerPixel)], kCoreSurfaceBufferPitch,
-            [NSNumber numberWithInt:width_], kCoreSurfaceBufferWidth,
-            [NSNumber numberWithInt:height_], kCoreSurfaceBufferHeight,
-            [NSNumber numberWithInt:'BGRA'], kCoreSurfaceBufferPixelFormat,
-            [NSNumber numberWithInt:(width_ * height_ * BytesPerPixel)], kCoreSurfaceBufferAllocSize,
+        buffer_ = IOSurfaceCreate((CFDictionaryRef) [NSDictionary dictionaryWithObjectsAndKeys:
+            @"PurpleEDRAM", kIOSurfaceMemoryRegion,
+            [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
+            [NSNumber numberWithInt:(width_ * BytesPerPixel)], kIOSurfaceBytesPerRow,
+            [NSNumber numberWithInt:width_], kIOSurfaceWidth,
+            [NSNumber numberWithInt:height_], kIOSurfaceHeight,
+            [NSNumber numberWithInt:'BGRA'], kIOSurfacePixelFormat,
+            [NSNumber numberWithInt:(width_ * height_ * BytesPerPixel)], kIOSurfaceAllocSize,
         nil]);
     else
         VNCBlack();
 
     //screen_->frameBuffer = reinterpret_cast<char *>(mmap(NULL, sizeof(rfbPixel) * width_ * height_, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NOCACHE, VM_FLAGS_PURGABLE, 0));
 
-    CoreSurfaceBufferLock(buffer_, 3);
-    screen_->frameBuffer = reinterpret_cast<char *>(CoreSurfaceBufferGetBaseAddress(buffer_));
-    CoreSurfaceBufferUnlock(buffer_);
+    IOSurfaceLock(buffer_, 3);
+    screen_->frameBuffer = reinterpret_cast<char *>(IOSurfaceGetBaseAddress(buffer_));
+    IOSurfaceUnlock(buffer_);
 
     screen_->kbdAddEvent = &VNCKeyboard;
     screen_->ptrAddEvent = &VNCPointer;
@@ -955,9 +979,9 @@ static void VNCNotifyEnabled(
 void (*$IOMobileFramebufferIsMainDisplay)(IOMobileFramebufferRef, int *);
 
 static IOMobileFramebufferRef main_;
-static CoreSurfaceBufferRef layer_;
+static IOSurfaceRef layer_;
 
-static void OnLayer(IOMobileFramebufferRef fb, CoreSurfaceBufferRef layer) {
+static void OnLayer(IOMobileFramebufferRef fb, IOSurfaceRef layer) {
     if (_unlikely(width_ == 0 || height_ == 0)) {
         CGSize size;
         IOMobileFramebufferGetDisplaySize(fb, &size);
@@ -985,19 +1009,19 @@ static void OnLayer(IOMobileFramebufferRef fb, CoreSurfaceBufferRef layer) {
                 VNCBlack();
         } else {
             if (accelerator_ != NULL)
-                CoreSurfaceAcceleratorTransferSurface(accelerator_, layer, buffer_, options_);
+                IOSurfaceAcceleratorTransferSurface(accelerator_, layer, buffer_, options_);
             else {
-                CoreSurfaceBufferLock(layer, 2);
-                rfbPixel *data(reinterpret_cast<rfbPixel *>(CoreSurfaceBufferGetBaseAddress(layer)));
+                IOSurfaceLock(layer, 2);
+                rfbPixel *data(reinterpret_cast<rfbPixel *>(IOSurfaceGetBaseAddress(layer)));
 
-                CoreSurfaceBufferFlushProcessorCaches(layer);
+                IOSurfaceFlushProcessorCaches(layer);
 
                 /*rfbPixel corner(data[0]);
                 data[0] = 0;
                 data[0] = corner;*/
 
                 screen_->frameBuffer = const_cast<char *>(reinterpret_cast<volatile char *>(data));
-                CoreSurfaceBufferUnlock(layer);
+                IOSurfaceUnlock(layer);
             }
         }
 
@@ -1010,7 +1034,7 @@ static bool wait_ = false;
 MSHook(kern_return_t, IOMobileFramebufferSwapSetLayer,
     IOMobileFramebufferRef fb,
     int layer,
-    CoreSurfaceBufferRef buffer,
+    IOSurfaceRef buffer,
     CGRect bounds,
     CGRect frame,
     int flags

@@ -21,6 +21,8 @@
 
 set -e
 
+archs=()
+
 function arch() {
     local arch=$1
     local host=$2
@@ -71,7 +73,19 @@ function arch() {
     configure libvncserver JPEG_LDFLAGS="-L${jpeg}/.libs -ljpeg"
     make
     cd ..
+
+    archs+=("${arch}")
 }
 
 arch armv6 arm-apple-darwin10 iphoneos iphoneos 2.0 -mllvm -arm-reserve-r9
+arch armv7 arm-apple-darwin11 iphoneos iphoneos 2.0
 arch arm64 aarch64-apple-darwin11 iphoneos iphoneos 2.0
+
+rm -rf library
+mkdir library
+lipo -output library/libjpeg.a -create $(for arch in "${archs[@]}"; do echo libjpeg.${arch}/.libs/libjpeg.a; done)
+lipo -output library/libvncserver.a -create $(for arch in "${archs[@]}"; do echo libvncserver.${arch}/libvncserver/.libs/libvncserver.a; done)
+
+lipo -output library/libsurface-armv6.dylib -thin armv7 "$(xcodebuild -sdk iphoneos -version Path)/System/Library/PrivateFrameworks/CoreSurface.framework/CoreSurface"
+LANG=C /sw/bin/sed -i -e 's@\(\xCE\xFA\xED\xFE\x0C\x00\x00\x00\)\x09\x00\x00\x00@\1\x06\x00\x00\x00@' library/libsurface-armv6.dylib
+lipo -output library/libsurface.dylib -create library/libsurface-armv6.dylib "$(xcodebuild -sdk iphoneos -version Path)/System/Library/PrivateFrameworks/IOSurface.framework/IOSurface"
