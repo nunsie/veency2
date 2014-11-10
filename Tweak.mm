@@ -1,5 +1,5 @@
 /* Veency - VNC Remote Access Server for iPhoneOS
- * Copyright (C) 2008-2012  Jay Freeman (saurik)
+ * Copyright (C) 2008-2014  Jay Freeman (saurik)
 */
 
 /* GNU Affero General Public License, Version 3 {{{ */
