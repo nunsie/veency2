@@ -1042,7 +1042,10 @@ MSHook(kern_return_t, IOMobileFramebufferSwapSetLayer,
 ) {
     BOOL main;
 
-    if (_unlikely(buffer == NULL))
+    if (false);
+    else if (_unlikely(layer != 0))
+        main = false;
+    else if (_unlikely(buffer == NULL))
         main = fb == main_;
     else if (_unlikely(fb == NULL))
         main = false;
