@@ -945,7 +945,7 @@ static void VNCEnabled() {
     if (screen_ == NULL)
         return;
 
-    [lock_ lock];
+    @synchronized (lock_) {
 
     Boolean valid;
     bool enabled(CFPreferencesGetAppBooleanValue(CFSTR("Enabled"), CFSTR("com.saurik.Veency"), &valid));
@@ -963,7 +963,7 @@ static void VNCEnabled() {
             running_ = false;
         }
 
-    [lock_ unlock];
+    }
 }
 
 static void VNCNotifyEnabled(
