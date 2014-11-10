@@ -140,7 +140,7 @@ extern "C" void IOSurfaceFlushProcessorCaches(IOSurfaceRef buffer);
 typedef void *IOSurfaceAcceleratorRef;
 
 extern "C" int IOSurfaceAcceleratorCreate(CFAllocatorRef allocator, void *type, IOSurfaceAcceleratorRef *accel);
-extern "C" unsigned int IOSurfaceAcceleratorTransferSurface(IOSurfaceAcceleratorRef accelerator, IOSurfaceRef dest, IOSurfaceRef src, CFDictionaryRef options/*, void *, void *, void **/);
+extern "C" unsigned int IOSurfaceAcceleratorTransferSurface(IOSurfaceAcceleratorRef accelerator, IOSurfaceRef dest, IOSurfaceRef src, void *, void *, void *, void *);
 
 typedef void *IOMobileFramebufferRef;
 
@@ -181,7 +181,6 @@ static const size_t BitsPerSample = 8;
 
 static IOSurfaceAcceleratorRef accelerator_;
 static IOSurfaceRef buffer_;
-static CFDictionaryRef options_;
 
 static NSMutableSet *handlers_;
 static rfbScreenInfoPtr screen_;
@@ -1002,7 +1001,7 @@ static void OnLayer(IOMobileFramebufferRef fb, IOSurfaceRef layer) {
                 VNCBlack();
         } else {
             if (accelerator_ != NULL)
-                IOSurfaceAcceleratorTransferSurface(accelerator_, layer, buffer_, options_);
+                IOSurfaceAcceleratorTransferSurface(accelerator_, layer, buffer_, NULL, NULL, NULL, NULL);
             else {
                 IOSurfaceLock(layer, 2);
                 rfbPixel *data(reinterpret_cast<rfbPixel *>(IOSurfaceGetBaseAddress(layer)));
@@ -1146,9 +1145,6 @@ MSInitialize {
     cfFalse_ = CFDataCreate(kCFAllocatorDefault, reinterpret_cast<UInt8 *>(&value), sizeof(value));
 
     cfEvent_ = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, reinterpret_cast<UInt8 *>(&event_), sizeof(event_), kCFAllocatorNull);
-
-    options_ = (CFDictionaryRef) [[NSDictionary dictionaryWithObjectsAndKeys:
-    nil] retain];
 
     [pool release];
 }
