@@ -454,6 +454,7 @@ static void VNCNotifySettings(
     const void *object,
     CFDictionaryRef info
 ) {
+    CFPreferencesAppSynchronize(CFSTR("com.saurik.Veency"));
     VNCSettings();
 }
 
@@ -973,6 +974,7 @@ static void VNCNotifyEnabled(
     const void *object,
     CFDictionaryRef info
 ) {
+    CFPreferencesAppSynchronize(CFSTR("com.saurik.Veency"));
     VNCEnabled();
 }
 
