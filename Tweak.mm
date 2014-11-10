@@ -164,7 +164,7 @@ extern "C" kern_return_t IOMobileFramebufferSwapSetLayer(
 );
 
 extern "C" void IOMobileFramebufferGetDisplaySize(IOMobileFramebufferRef connect, CGSize *size);
-extern "C" void IOMobileFramebufferIsMainDisplay(IOMobileFramebufferRef connect, int *main);
+void (*$IOMobileFramebufferIsMainDisplay)(IOMobileFramebufferRef, BOOL *);
 
 extern "C" {
     IOHIDEventRef IOHIDEventCreateKeyboardEvent(CFAllocatorRef allocator, uint64_t time, uint16_t page, uint16_t usage, Boolean down, IOHIDEventOptionBits flags);
@@ -976,7 +976,6 @@ static void VNCNotifyEnabled(
     VNCEnabled();
 }
 
-void (*$IOMobileFramebufferIsMainDisplay)(IOMobileFramebufferRef, int *);
 
 static IOMobileFramebufferRef main_;
 static IOSurfaceRef layer_;
@@ -1041,7 +1040,7 @@ MSHook(kern_return_t, IOMobileFramebufferSwapSetLayer,
     CGRect frame,
     int flags
 ) {
-    int main(false);
+    BOOL main;
 
     if (_unlikely(buffer == NULL))
         main = fb == main_;
