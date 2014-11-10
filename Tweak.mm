@@ -906,7 +906,9 @@ static void VNCSetup() {
     if (opengles2 != NULL)
         CFRelease(opengles2);
 
-    if (accelerator_ != NULL)
+    if (accelerator_ == NULL)
+        VNCBlack();
+    else {
         buffer_ = IOSurfaceCreate((CFDictionaryRef) [NSDictionary dictionaryWithObjectsAndKeys:
             @"PurpleEDRAM", kIOSurfaceMemoryRegion,
             [NSNumber numberWithBool:YES], kIOSurfaceIsGlobal,
@@ -916,14 +918,11 @@ static void VNCSetup() {
             [NSNumber numberWithInt:'BGRA'], kIOSurfacePixelFormat,
             [NSNumber numberWithInt:(width_ * height_ * BytesPerPixel)], kIOSurfaceAllocSize,
         nil]);
-    else
-        VNCBlack();
 
-    //screen_->frameBuffer = reinterpret_cast<char *>(mmap(NULL, sizeof(rfbPixel) * width_ * height_, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE | MAP_NOCACHE, VM_FLAGS_PURGABLE, 0));
-
-    IOSurfaceLock(buffer_, 3);
-    screen_->frameBuffer = reinterpret_cast<char *>(IOSurfaceGetBaseAddress(buffer_));
-    IOSurfaceUnlock(buffer_);
+        IOSurfaceLock(buffer_, 3);
+        screen_->frameBuffer = reinterpret_cast<char *>(IOSurfaceGetBaseAddress(buffer_));
+        IOSurfaceUnlock(buffer_);
+    }
 
     screen_->kbdAddEvent = &VNCKeyboard;
     screen_->ptrAddEvent = &VNCPointer;
