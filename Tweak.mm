@@ -130,9 +130,12 @@ extern CFStringRef kIOSurfaceHeight;
 extern CFStringRef kIOSurfacePixelFormat;
 extern CFStringRef kIOSurfaceAllocSize;
 
+#define kIOSurfaceLockReadOnly 1
+#define kIOSurfaceLockAvoidSync 2
+
 extern "C" IOSurfaceRef IOSurfaceCreate(CFDictionaryRef dict);
-extern "C" int IOSurfaceLock(IOSurfaceRef surface, unsigned int lockType);
-extern "C" int IOSurfaceUnlock(IOSurfaceRef surface);
+extern "C" int IOSurfaceLock(IOSurfaceRef surface, uint32_t options, uint32_t *seed);
+extern "C" int IOSurfaceUnlock(IOSurfaceRef surface, uint32_t options, uint32_t *seed);
 extern "C" void *IOSurfaceGetBaseAddress(IOSurfaceRef surface);
 
 extern "C" void IOSurfaceFlushProcessorCaches(IOSurfaceRef buffer);
@@ -141,6 +144,13 @@ typedef void *IOSurfaceAcceleratorRef;
 
 extern "C" int IOSurfaceAcceleratorCreate(CFAllocatorRef allocator, void *type, IOSurfaceAcceleratorRef *accel);
 extern "C" unsigned int IOSurfaceAcceleratorTransferSurface(IOSurfaceAcceleratorRef accelerator, IOSurfaceRef dest, IOSurfaceRef src, void *, void *, void *, void *);
+
+#if defined(_ARM_ARCH_6) && !defined(_ARM_ARCH_7)
+#define CoreSurfaceBufferLock(surface, options, seed) \
+    CoreSurfaceBufferLock(surface, 3, NULL)
+#define CoreSurfaceBufferUnlock(surface, options, seed) \
+    CoreSurfaceBufferUnlock(surface, 3, NULL)
+#endif
 
 typedef void *IOMobileFramebufferRef;
 
@@ -918,9 +928,7 @@ static void VNCSetup() {
             [NSNumber numberWithInt:(width_ * height_ * BytesPerPixel)], kIOSurfaceAllocSize,
         nil]);
 
-        IOSurfaceLock(buffer_, 3);
         screen_->frameBuffer = reinterpret_cast<char *>(IOSurfaceGetBaseAddress(buffer_));
-        IOSurfaceUnlock(buffer_);
     }
 
     screen_->kbdAddEvent = &VNCKeyboard;
@@ -995,15 +1003,17 @@ static void OnLayer(IOMobileFramebufferRef fb, IOSurfaceRef layer) {
         [thread start];
     } else if (_unlikely(clients_ != 0)) {
         if (layer == NULL) {
-            if (accelerator_ != NULL)
+            if (accelerator_ != NULL) {
+                IOSurfaceLock(layer, 0, NULL);
                 memset(screen_->frameBuffer, 0, sizeof(rfbPixel) * width_ * height_);
-            else
+                IOSurfaceUnlock(layer, 0, NULL);
+            } else
                 VNCBlack();
         } else {
             if (accelerator_ != NULL)
                 IOSurfaceAcceleratorTransferSurface(accelerator_, layer, buffer_, NULL, NULL, NULL, NULL);
             else {
-                IOSurfaceLock(layer, 2);
+                IOSurfaceLock(layer, kIOSurfaceLockReadOnly, NULL);
                 rfbPixel *data(reinterpret_cast<rfbPixel *>(IOSurfaceGetBaseAddress(layer)));
 
                 IOSurfaceFlushProcessorCaches(layer);
@@ -1013,7 +1023,7 @@ static void OnLayer(IOMobileFramebufferRef fb, IOSurfaceRef layer) {
                 data[0] = corner;*/
 
                 screen_->frameBuffer = const_cast<char *>(reinterpret_cast<volatile char *>(data));
-                IOSurfaceUnlock(layer);
+                IOSurfaceUnlock(layer, kIOSurfaceLockReadOnly, NULL);
             }
         }
 
