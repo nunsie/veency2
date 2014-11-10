@@ -276,16 +276,18 @@ static void VNCEnabled();
 
 float (*$GSMainScreenScaleFactor)();
 
-static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags flags) {
+static void VNCAction(rfbNewClientAction action) {
     [condition_ lock];
-
-    if ((flags & 0x3) == 1)
-        action_ = RFB_CLIENT_ACCEPT;
-    else
-        action_ = RFB_CLIENT_REFUSE;
-
+    action_ = action;
     [condition_ signal];
     [condition_ unlock];
+}
+
+static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags flags) {
+    if ((flags & 0x3) == 1)
+        VNCAction(RFB_CLIENT_ACCEPT);
+    else
+        VNCAction(RFB_CLIENT_REFUSE);
 
     CFRelease(notification);
 }
@@ -321,10 +323,7 @@ static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags
     }
 
     if (notification == NULL) {
-        [condition_ lock];
-        action_ = RFB_CLIENT_REFUSE;
-        [condition_ signal];
-        [condition_ unlock];
+        VNCAction(RFB_CLIENT_REFUSE);
         return;
     }
 
@@ -374,11 +373,9 @@ static void OnUserNotification(CFUserNotificationRef notification, CFOptionFlags
 @end
 
 MSInstanceMessage2(void, VNCAlertItem, alertSheet,buttonClicked, id, sheet, int, button) {
-    [condition_ lock];
-
     switch (button) {
         case 1:
-            action_ = RFB_CLIENT_ACCEPT;
+            VNCAction(RFB_CLIENT_ACCEPT);
 
             @synchronized (condition_) {
                 [VNCBridge registerClient];
@@ -386,12 +383,10 @@ MSInstanceMessage2(void, VNCAlertItem, alertSheet,buttonClicked, id, sheet, int,
         break;
 
         case 2:
-            action_ = RFB_CLIENT_REFUSE;
+            VNCAction(RFB_CLIENT_REFUSE);
         break;
     }
 
-    [condition_ signal];
-    [condition_ unlock];
     [self dismiss];
 }
 
