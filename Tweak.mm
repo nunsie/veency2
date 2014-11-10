@@ -376,10 +376,6 @@ MSInstanceMessage2(void, VNCAlertItem, alertSheet,buttonClicked, id, sheet, int,
     switch (button) {
         case 1:
             VNCAction(RFB_CLIENT_ACCEPT);
-
-            @synchronized (condition_) {
-                [VNCBridge registerClient];
-            }
         break;
 
         case 2:
@@ -832,25 +828,26 @@ static void VNCDisconnect(rfbClientPtr client) {
 }
 
 static rfbNewClientAction VNCClient(rfbClientPtr client) {
-    @synchronized (condition_) {
-        if (screen_->authPasswdData != NULL) {
-            [VNCBridge performSelectorOnMainThread:@selector(registerClient) withObject:nil waitUntilDone:YES];
-            client->clientGoneHook = &VNCDisconnect;
-            return RFB_CLIENT_ACCEPT;
-        }
+    [condition_ lock];
+
+    rfbNewClientAction action;
+    if (screen_->authPasswdData != NULL)
+        action = RFB_CLIENT_ACCEPT;
+    else {
+        client_ = client;
+        [VNCBridge performSelectorOnMainThread:@selector(askForConnection) withObject:nil waitUntilDone:NO];
+        while (action_ == RFB_CLIENT_ON_HOLD)
+            [condition_ wait];
+        action = action_;
+        action_ = RFB_CLIENT_ON_HOLD;
     }
 
-    [condition_ lock];
-    client_ = client;
-    [VNCBridge performSelectorOnMainThread:@selector(askForConnection) withObject:nil waitUntilDone:NO];
-    while (action_ == RFB_CLIENT_ON_HOLD)
-        [condition_ wait];
-    rfbNewClientAction action(action_);
-    action_ = RFB_CLIENT_ON_HOLD;
-    [condition_ unlock];
-
-    if (action == RFB_CLIENT_ACCEPT)
+    if (action == RFB_CLIENT_ACCEPT) {
+        [VNCBridge performSelectorOnMainThread:@selector(registerClient) withObject:nil waitUntilDone:YES];
         client->clientGoneHook = &VNCDisconnect;
+    }
+
+    [condition_ unlock];
     return action;
 }
 
