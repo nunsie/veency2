@@ -866,8 +866,18 @@ static CFTypeRef (*$GSSystemCopyCapability)(CFStringRef);
 static CFTypeRef (*$GSSystemGetCapability)(CFStringRef);
 static BOOL (*$MGGetBoolAnswer)(CFStringRef);
 
+static void VNCLog(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    NSLogv([NSString stringWithUTF8String:format], args);
+    va_end(args);
+}
+
 static void VNCSetup() {
-    rfbLogEnable(false);
+    if (true)
+        rfbLogEnable(false);
+    else
+        rfbLog = &VNCLog;
 
     @synchronized (condition_) {
         int argc(1);
