@@ -20,7 +20,7 @@
 /* }}} */
 
 #define _trace() \
-    fprintf(stderr, "_trace()@%s:%u[%s]\n", __FILE__, __LINE__, __FUNCTION__)
+    NSLog(@"_trace()@%s:%u[%s]\n", __FILE__, __LINE__, __FUNCTION__)
 #define _likely(expr) \
     __builtin_expect(expr, 1)
 #define _unlikely(expr) \
