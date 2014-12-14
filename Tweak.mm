@@ -429,13 +429,14 @@ static void VNCSettings() {
             return;
 
         [(NSString *) screen_->authPasswdData release];
-        screen_->authPasswdData = NULL;
 
         if (CFStringRef password = (CFStringRef) CFPreferencesCopyAppValue(CFSTR("Password"), CFSTR("com.saurik.Veency")))
-            if (CFStringGetLength(password) == 0)
-                CFRelease(password);
-            else
+            if (CFStringGetLength(password) != 0)
                 screen_->authPasswdData = (void *) password;
+            else {
+                CFRelease(password);
+                screen_->authPasswdData = [@"" retain];
+            }
 
         Boolean valid;
         cursor_ = CFPreferencesGetAppBooleanValue(CFSTR("ShowCursor"), CFSTR("com.saurik.Veency"), &valid);
@@ -461,6 +462,8 @@ static void VNCNotifySettings(
 static rfbBool VNCCheck(rfbClientPtr client, const char *data, int size) {
     @synchronized (condition_) {
         if (NSString *password = reinterpret_cast<NSString *>(screen_->authPasswdData)) {
+            if ([password length] == 0)
+                return TRUE;
             NSAutoreleasePool *pool([[NSAutoreleasePool alloc] init]);
             rfbEncryptBytes(client->authChallenge, const_cast<char *>([password UTF8String]));
             bool good(memcmp(client->authChallenge, data, size) == 0);
@@ -840,7 +843,7 @@ static rfbNewClientAction VNCClient(rfbClientPtr client) {
     [condition_ lock];
 
     rfbNewClientAction action;
-    if (screen_->authPasswdData != NULL)
+    if (screen_->authPasswdData != NULL && [(NSString *) screen_->authPasswdData length] != 0)
         action = RFB_CLIENT_ACCEPT;
     else {
         client_ = client;
